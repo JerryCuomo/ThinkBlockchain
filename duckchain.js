@@ -1,4 +1,13 @@
-const SHA256 = require('crypto-js/sha256');
+/*
+  Title: Duckchain
+  Author: Jerry Cuomo
+  Source: Think Blockchain, Chapter 3 - How Blockchain Works
+  Publisher: BookBaby.com, 2022
+  Description: Simple blockchain implementation in Node.js.
+
+//const SHA256 = require('crypto-js/sha256');
+const {createHash} = require('node:crypto');
+function SHA256(string) {return(createHash('sha256').update(string).digest('hex'));}
 
 // This class defines a Block object destined for a Blockchain
 class Block {
