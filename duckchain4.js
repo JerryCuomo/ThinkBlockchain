@@ -1,11 +1,11 @@
 /*
-  Title: duckchain3.js
+  Title: duckchain4.js
   Author: Jerry Cuomo
-  Description: This version features several enhancements over duckchain2.js.
-  - Adds an Admin class with admin names.
-  - Uses the Admin class to simulate a network of blockchain admins (both ducks and humans).
-  - Outputs which admins disagree with the consensus.
-  - Improved comments for better understanding.
+  Description: This version features several enhancements over duckchain2.js to include a mining simulation
+  - Updates Block class with new fields (nonce, timestamp)
+  - Updates calculate hash to include these fields
+  - Adds mining method to Block class to emulate mining
+  - Update to Blockchain class that addes difficulty level (number of leading '0' to match
   Usage: Run the program to see a simulation of a duck-themed blockchain with a network of admins.
 */
 const { createHash } = require('crypto');
