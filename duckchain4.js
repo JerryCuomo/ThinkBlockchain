@@ -51,6 +51,7 @@ class Block {
     mineBlock(difficulty) {
         console.log(`Mining block #${this.index} with difficulty level: ${difficulty}...`);
         const startTime = new Date(); // Start timing the mining process
+        this.nonce = 0; // reset nonce
 
         // Repeat the process until the hash starts with 'difficulty' number of zeros
         while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join("0")) {
@@ -133,6 +134,13 @@ duckchain.addBlock(new Block(1, "Donald Duck")); // Add a block with data
 duckchain.difficulty = 5;
 console.log("Adding block #2...");
 duckchain.addBlock(new Block(2, "Daffy Duck")); // Add another block with data
+
+// NOTE TO SELF: I've noticed some odd behavior when mining multiple blocks of higher difficulty;
+// mining times are inconsistent. If we jump straight to a higher difficulty (e.g., 6),
+// it can take up to 50 seconds. However, if we incrementally mine blocks at difficulties 3, 4, 5, and 6,
+// the block at difficulty 6 may only take about 10 seconds.
+// This could be due to JIT optimizations or warmed-up CPU caches, 
+// which make subsequent mining faster compared to initial blocks.
 
 // Print out the full Duckchain with pretty formatting
 console.log("Full Duckchain:");
