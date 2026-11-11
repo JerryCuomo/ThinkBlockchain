@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101326">
+<title>Blockchain Jeopardy!</title>
+<style>
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  color: #f4f4ff;
+  background: #101326;
+  --gold: #ffcb72;
+  --muted: #b8c1dd;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at top, #252c59, #101326 66%);
+}
+main { width: min(100% - 2rem, 66rem); margin: auto; padding: clamp(2rem, 7vw, 5rem) 0 2rem; }
+header { margin-bottom: 2rem; }
+.course, .phase {
+  color: var(--gold);
+  font-size: .75rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+h1 { font-size: clamp(2rem, 7vw, 5rem); letter-spacing: -.055em; line-height: 1; margin: .55rem 0 .8rem; }
+header p, footer p, .meta { color: var(--muted); }
+.scores {
+  display: flex;
+  gap: .75rem;
+  margin: 0 0 1rem;
+}
+.score {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .65rem .85rem;
+  border-radius: .75rem;
+  background: #1b2140;
+}
+.timer { font-variant-numeric: tabular-nums; }
+.timer[data-urgent="true"] { color: #ff9e9e; }
+.score output { color: var(--gold); font-weight: 800; }
+.awards { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; }
+.awards[hidden] { display: none; }
+.dialog-bar { flex-wrap: wrap; gap: .5rem; }
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(.35rem, 1.3vw, .85rem); }
+.category {
+  margin: 0;
+  padding: .85rem .3rem;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  font-size: clamp(.78rem, 2.5vw, 1.2rem);
+  background: #1b2140;
+  border-radius: .75rem;
+}
+button { font: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.tile {
+  min-height: clamp(4.4rem, 12vw, 8rem);
+  border: 1px solid #5563a1;
+  border-radius: .8rem;
+  background: linear-gradient(155deg, #333f84, #222a5b);
+  color: var(--gold);
+  font-size: clamp(1.45rem, 5vw, 3.25rem);
+  font-weight: 850;
+}
+.tile:not([aria-disabled="true"]):hover { background: #3d4e99; border-color: var(--gold); }
+.tile[aria-disabled="true"] { background: #191e37; border-color: #343b5a; color: var(--muted); cursor: default; }
+footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; }
+.control {
+  min-height: 44px;
+  padding: .55rem 1rem;
+  border: 1px solid #68749e;
+  border-radius: .6rem;
+  color: inherit;
+  background: #202747;
+}
+.control:hover { background: #333d68; }
+dialog {
+  width: min(100% - 2rem, 53rem);
+  max-height: calc(100% - 2rem);
+  padding: 0;
+  border: 1px solid #6573af;
+  border-radius: 1.2rem;
+  color: inherit;
+  background: #202855;
+  box-shadow: 0 1rem 5rem #080a17;
+}
+dialog::backdrop { background: #080a17dd; }
+.card {
+  width: 100%;
+  min-height: clamp(15rem, 50vh, 28rem);
+  padding: clamp(1.4rem, 5vw, 3rem);
+  border: 0;
+  border-radius: 1.2rem 1.2rem 0 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1rem;
+  color: inherit;
+  background: radial-gradient(ellipse at top, #37447e, #202855 80%);
+}
+.card:focus-visible { outline-offset: -5px; }
+.card-text { font-size: clamp(1.5rem, 5vw, 3.35rem); font-weight: 750; line-height: 1.15; text-wrap: balance; }
+.card[data-response="true"] .card-text { color: var(--gold); }
+.action { color: var(--muted); font-size: .9rem; }
+.card:hover .action { color: white; text-decoration: underline; }
+.dialog-bar { padding: .75rem; display: flex; justify-content: center; border-top: 1px solid #4a5684; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="course">CSC-297 · Blockchain</div>
+    <h1>Blockchain Jeopardy!</h1>
+    <p>Choose a value, then give your response in the form of a question.</p>
+  </header>
+  <p>Time left <strong class="timer" id="timer" role="timer">10:00</strong></p>
+  <section class="scores" aria-label="Scores">
+    <div class="score"><label for="score-1">Player 1</label><output id="score-1">₿0</output></div>
+    <div class="score"><label for="score-2">Player 2</label><output id="score-2">₿0</output></div>
+  </section>
+  <section class="board" id="board" aria-label="Game board"></section>
+  <footer>
+    <p id="progress" role="status"></p>
+    <button class="control" id="reset" type="button">Reset board</button>
+  </footer>
+  <noscript>Enable JavaScript to play.</noscript>
+</main>
+<dialog id="round" aria-label="Selected clue">
+  <button class="card" id="card" type="button" autofocus>
+    <span class="meta" id="meta"></span>
+    <span class="phase" id="phase"></span>
+    <span class="card-text" id="card-text" aria-live="polite"></span>
+    <span class="action" id="action"></span>
+  </button>
+  <div class="dialog-bar">
+    <div class="awards" id="awards" hidden>
+      <button class="control" id="award-1" type="button"></button>
+      <button class="control" id="award-2" type="button"></button>
+    </div>
+    <button class="control" id="back" type="button">Back to board · Esc</button>
+  </div>
+</dialog>
+<script>
+const categories = ['Bitcoin Basics', 'Blockchain & Trust', 'Smart Contracts & NFTs'];
+const values = [1, 5, 10];
+const clues = [
+  [
+    ['This mysterious person is credited with creating Bitcoin.', 'Who is Satoshi Nakamoto?'],
+    ['This shared ledger records data in blocks linked by cryptographic hashes.', 'What is a blockchain?'],
+    ['This type of token represents a distinct item and is not interchangeable one-for-one with another token of the same type.', 'What is an NFT?']
+  ],
+  [
+    ['This consensus mechanism requires Bitcoin miners to perform computational work.', 'What is Proof of Work?'],
+    ['This process transforms input data into a fixed-length digest that can help detect changes.', 'What is hashing?'],
+    ['This program runs on a blockchain and executes its rules when invoked.', 'What is a smart contract?']
+  ],
+  [
+    ['This is the maximum supply of bitcoin, expressed in millions.', 'What is 21 million bitcoin?'],
+    ['This tree-shaped structure uses hashes to efficiently verify transactions within a block.', 'What is a Merkle tree?'],
+    ['This term describes the recorded history of an asset’s origin and ownership.', 'What is provenance?']
+  ]
+];
+
+const board = document.getElementById('board');
+const round = document.getElementById('round');
+const card = document.getElementById('card');
+const meta = document.getElementById('meta');
+const phase = document.getElementById('phase');
+const cardText = document.getElementById('card-text');
+const action = document.getElementById('action');
+const progress = document.getElementById('progress');
+const awards = document.getElementById('awards');
+const awardButtons = [document.getElementById('award-1'), document.getElementById('award-2')];
+const scoreDisplays = [document.getElementById('score-1'), document.getElementById('score-2')];
+const scores = [0, 0];
+const timer = document.getElementById('timer');
+const gameDuration = 10 * 60 * 1000;
+let deadline = 0;
+let countdown;
+let expired = false;
+const played = new Set();
+const tiles = [];
+let activeTile;
+let showingResponse = false;
+
+function displayTime(milliseconds) {
+  const seconds = Math.ceil(milliseconds / 1000);
+  timer.textContent = Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
+  timer.dataset.urgent = String(seconds <= 60);
+}
+
+function stopClock() {
+  clearInterval(countdown);
+  countdown = undefined;
+}
+
+function checkTime() {
+  if (expired) return false;
+  if (!deadline) return true;
+  const remaining = Math.max(0, deadline - Date.now());
+  displayTime(remaining);
+  if (remaining > 0) return true;
+  expired = true;
+  stopClock();
+  if (round.open) round.close();
+  updateBoard();
+  return false;
+}
+
+function updateScores() {
+  scoreDisplays.forEach((display, index) => {
+    display.textContent = '₿' + scores[index];
+  });
+}
+
+function updateBoard() {
+  tiles.forEach(tile => {
+    const { button } = tile;
+    const used = played.has(tile);
+    button.setAttribute('aria-disabled', String(used || expired));
+    button.setAttribute('aria-label', tile.label + (used ? ', played' : ''));
+    button.textContent = used ? '✓' : tile.valueLabel;
+  });
+  progress.textContent = expired ? 'Time’s up · Final scores above' : played.size === tiles.length
+    ? 'Board complete · All 9 clues played'
+    : played.size + ' of ' + tiles.length + ' played';
+}
+
+categories.forEach(category => {
+  const heading = document.createElement('h2');
+  heading.className = 'category';
+  heading.textContent = category;
+  board.append(heading);
+});
+
+clues.forEach((row, rowIndex) => row.forEach(([clue, response], columnIndex) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'tile';
+  const value = values[rowIndex];
+  const valueLabel = '₿' + value;
+  const tile = { button, clue, response, value, valueLabel, label: categories[columnIndex] + ' · ' + valueLabel };
+  tiles.push(tile);
+  board.append(button);
+  button.addEventListener('click', () => {
+    if (played.has(tile) || !checkTime()) return;
+    if (!deadline) {
+      deadline = Date.now() + gameDuration;
+      countdown = setInterval(checkTime, 250);
+    }
+    activeTile = tile;
+    showingResponse = false;
+    awards.hidden = true;
+    meta.textContent = tile.label;
+    phase.textContent = 'Clue';
+    cardText.textContent = tile.clue;
+    action.textContent = 'Reveal response';
+    card.dataset.response = 'false';
+    round.showModal();
+    card.focus();
+  });
+}));
+
+card.addEventListener('click', () => {
+  if (!checkTime()) return;
+  if (showingResponse) {
+    round.close();
+    return;
+  }
+  showingResponse = true;
+  played.add(activeTile);
+  phase.textContent = 'Correct response';
+  cardText.textContent = activeTile.response;
+  action.textContent = 'Return to board';
+  card.dataset.response = 'true';
+  awardButtons.forEach((button, index) => {
+    button.textContent = 'Player ' + (index + 1) + ' +' + activeTile.valueLabel;
+  });
+  awards.hidden = false;
+  updateBoard();
+});
+
+awardButtons.forEach((button, index) => {
+  button.addEventListener('click', () => {
+    if (!round.open || !showingResponse || !checkTime()) return;
+    scores[index] += activeTile.value;
+    updateScores();
+    round.close();
+  });
+});
+
+document.getElementById('back').addEventListener('click', () => round.close());
+round.addEventListener('close', () => {
+  if (played.size === tiles.length && !expired && checkTime()) stopClock();
+  activeTile.button.focus();
+});
+document.getElementById('reset').addEventListener('click', () => {
+  stopClock();
+  deadline = 0;
+  expired = false;
+  displayTime(gameDuration);
+  played.clear();
+  scores.fill(0);
+  updateScores();
+  updateBoard();
+  tiles[0].button.focus();
+});
+updateBoard();
+</script>
+</body>
+</html>
